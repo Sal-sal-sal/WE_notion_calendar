@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallpaper Calendar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        #stars-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            padding: 30px;
+            min-height: 100vh;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .panel-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        /* КАЛЕНДАРЬ */
+        .calendar-container {
+            margin-top: 0;
+        }
+
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 15px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .calendar-week {
+            display: grid;
+            grid-template-columns: 60px repeat(7, 1fr);
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .week-header {
+            display: contents;
+        }
+
+        .time-label-header {
+            background: rgba(20, 20, 20, 0.9);
+            padding: 10px;
+            font-size: 11px;
+            opacity: 0.5;
+        }
+
+        .day-header {
+            background: rgba(20, 20, 20, 0.9);
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .day-header.today {
+            color: #4CAF50;
+        }
+
+        .day-header.highlighted {
+            color: #ff4444;
+        }
+
+        .day-number {
+            display: block;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        .time-grid {
+            display: contents;
+        }
+
+        .time-label {
+            background: rgba(20, 20, 20, 0.9);
+            padding: 5px;
+            text-align: right;
+            font-size: 11px;
+            opacity: 0.5;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .day-column {
+            background: rgba(30, 30, 30, 0.5);
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            min-height: 60px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .day-column:hover {
+            background: rgba(40, 40, 40, 0.6);
+        }
+
+        .day-column.today {
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .calendar-event {
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            background: rgba(59, 130, 246, 0.6);
+            border-left: 3px solid #3b82f6;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 11px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-event:hover {
+            background: rgba(59, 130, 246, 0.8);
+            z-index: 10;
+        }
+
+        .calendar-event.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        /* TO-DO LIST */
+        .todo-input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .todo-input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .todo-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .todo-input.time-input {
+            flex: 0 0 80px;
+            text-align: center;
+        }
+
+        .todo-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .time-separator {
+            display: flex;
+            align-items: center;
+            opacity: 0.5;
+        }
+
+        .todo-add-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .todo-add-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .todo-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .todo-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .todo-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .todo-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .todo-text {
+            font-size: 14px;
+        }
+
+        .todo-text.completed {
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .todo-time {
+            font-size: 12px;
+            opacity: 0.6;
+            font-family: 'Courier New', monospace;
+        }
+
+        .todo-delete-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .todo-delete-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+        }
+
+        /* POMODORO */
+        .pomodoro-timer {
+            text-align: center;
+        }
+
+        .pomodoro-settings {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .pomodoro-setting {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .pomodoro-setting label {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .pomodoro-setting input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            width: 60px;
+            outline: none;
+        }
+
+        .pomodoro-setting input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .pomodoro-display {
+            font-size: 48px;
+            font-weight: 700;
+            margin: 30px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .pomodoro-mode {
+            font-size: 16px;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+
+        .pomodoro-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .pomodoro-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .pomodoro-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .pomodoro-btn.active {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+        }
+
+        .pomodoro-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .pomodoro-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 1s linear;
+        }
+
+        /* Scrollbar */
+        .todo-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .todo-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .calendar-container {
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stars-canvas"></canvas>
+
+    <div class="container">
+        <!-- TO-DO LIST -->
+        <div class="panel">
+            <div class="panel-header">📝 To-Do List</div>
+            <div class="todo-input-container">
+                <input type="text" class="todo-input" id="todo-input" placeholder="Добавить задачу...">
+                <div class="todo-input-row">
+                    <input type="time" class="todo-input time-input" id="todo-time-start" placeholder="Начало">
+                    <span class="time-separator">-</span>
+                    <input type="time" class="todo-input time-input" id="todo-time-end" placeholder="Конец">
+                    <button class="todo-add-btn" onclick="addTodo()">+</button>
+                </div>
+            </div>
+            <div class="todo-list" id="todo-list"></div>
+        </div>
+
+        <!-- КАЛЕНДАРЬ -->
+        <div class="panel calendar-container">
+            <div class="calendar-nav">
+                <button class="calendar-nav-btn" onclick="previousWeek()">← Пред</button>
+                <div class="calendar-header">
+                    <h1 id="week-range"></h1>
+                </div>
+                <button class="calendar-nav-btn" onclick="nextWeek()">След →</button>
+            </div>
+            <div class="calendar-week" id="calendar-week"></div>
+        </div>
+
+        <!-- POMODORO -->
+        <div class="panel">
+            <div class="panel-header">🍅 Pomodoro</div>
+            <div class="pomodoro-timer">
+                <div class="pomodoro-settings">
+                    <div class="pomodoro-setting">
+                        <label>Работа (мин)</label>
+                        <input type="number" id="work-time" value="25" min="1" max="60" onchange="updatePomodoroSettings()">
+                    </div>
+                    <div class="pomodoro-setting">
+                        <label>Отдых (мин)</label>
+                        <input type="number" id="break-time" value="5" min="1" max="30" onchange="updatePomodoroSettings()">
+                    </div>
+                </div>
+                <div class="pomodoro-mode" id="pomodoro-mode">Работа</div>
+                <div class="pomodoro-display" id="pomodoro-display">25:00</div>
+                <div class="pomodoro-controls">
+                    <button class="pomodoro-btn" id="pomodoro-start" onclick="togglePomodoro()">Старт</button>
+                    <button class="pomodoro-btn" onclick="resetPomodoro()">Сброс</button>
+                </div>
+                <div class="pomodoro-progress">
+                    <div class="pomodoro-progress-bar" id="pomodoro-progress"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============== ПАДАЮЩИЕ ЗВЕЗДЫ ==============
+        const canvas = document.getElementById('stars-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        class Star {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = -10;
+                this.length = Math.random() * 80 + 20;
+                this.speed = Math.random() * 10 + 5;
+                this.opacity = Math.random() * 0.5 + 0.5;
+            }
+
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height + 10) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                const gradient = ctx.createLinearGradient(
+                    this.x, this.y,
+                    this.x, this.y + this.length
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        const stars = Array.from({ length: 30 }, () => new Star());
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                star.update();
+                star.draw();
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        animateStars();
+
+        // ============== КАЛЕНДАРЬ ==============
+        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        const monthNames = [
+            'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+        ];
+
+        function generateCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const today = now.getDate();
+
+            const firstDay = new Date(year, month, 1);
+            const firstDayOfWeek = (firstDay.getDay() + 6) % 7;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            document.getElementById('month-year').textContent = `${monthNames[month]} ${year}`;
+            document.getElementById('current-date').textContent = `Сегодня: ${today} ${monthNames[month]}`;
+
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-name';
+                dayHeader.textContent = day;
+                grid.appendChild(dayHeader);
+            });
+
+            for (let i = 0; i < firstDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell empty';
+                grid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.textContent = day;
+
+                if (day === 9) {
+                    dayCell.classList.add('highlighted');
+                }
+
+                if (day === today) {
+                    dayCell.classList.add('today');
+                }
+
+                grid.appendChild(dayCell);
+            }
+        }
+
+        generateCalendar();
+
+        // ============== TO-DO LIST ==============
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            todoList.innerHTML = '';
+
+            todos.forEach((todo, index) => {
+                const todoItem = document.createElement('div');
+                todoItem.className = 'todo-item';
+                
+                let timeDisplay = '';
+                if (todo.timeStart || todo.timeEnd) {
+                    timeDisplay = `<div class="todo-time">⏰ ${todo.timeStart || '--:--'} - ${todo.timeEnd || '--:--'}</div>`;
+                }
+                
+                todoItem.innerHTML = `
+                    <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${index})">
+                    <div class="todo-content">
+                        <span class="todo-text ${todo.completed ? 'completed' : ''}">${todo.text}</span>
+                        ${timeDisplay}
+                    </div>
+                    <button class="todo-delete-btn" onclick="deleteTodo(${index})">✕</button>
+                `;
+                todoList.appendChild(todoItem);
+            });
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todo-input');
+            const timeStart = document.getElementById('todo-time-start');
+            const timeEnd = document.getElementById('todo-time-end');
+            
+            const text = input.value.trim();
+            
+            if (text) {
+                todos.push({ 
+                    text, 
+                    completed: false,
+                    timeStart: timeStart.value || '',
+                    timeEnd: timeEnd.value || ''
+                });
+                saveTodos();
+                renderTodos();
+                input.value = '';
+                timeStart.value = '';
+                timeEnd.value = '';
+            }
+        }
+
+        function toggleTodo(index) {
+            todos[index].completed = !todos[index].completed;
+            saveTodos();
+            renderTodos();
+        }
+
+        function deleteTodo(index) {
+            todos.splice(index, 1);
+            saveTodos();
+            renderTodos();
+        }
+
+        document.getElementById('todo-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+
+        renderTodos();
+
+        // ============== POMODORO ==============
+        let pomodoroInterval = null;
+        let workTime = 25;
+        let breakTime = 5;
+        let pomodoroTime = workTime * 60;
+        let pomodoroTotalTime = workTime * 60;
+        let isWorkMode = true;
+        let isRunning = false;
+
+        function updatePomodoroSettings() {
+            if (isRunning) return; // Не менять настройки во время работы таймера
+            
+            workTime = parseInt(document.getElementById('work-time').value) || 25;
+            breakTime = parseInt(document.getElementById('break-time').value) || 5;
+            
+            if (isWorkMode) {
+                pomodoroTime = workTime * 60;
+                pomodoroTotalTime = workTime * 60;
+            } else {
+                pomodoroTime = breakTime * 60;
+                pomodoroTotalTime = breakTime * 60;
+            }
+            
+            updatePomodoroDisplay();
+        }
+
+        function updatePomodoroDisplay() {
+            const minutes = Math.floor(pomodoroTime / 60);
+            const seconds = pomodoroTime % 60;
+            document.getElementById('pomodoro-display').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const progress = ((pomodoroTotalTime - pomodoroTime) / pomodoroTotalTime) * 100;
+            document.getElementById('pomodoro-progress').style.width = progress + '%';
+        }
+
+        function togglePomodoro() {
+            const btn = document.getElementById('pomodoro-start');
+            
+            if (isRunning) {
+                clearInterval(pomodoroInterval);
+                btn.textContent = 'Старт';
+                btn.classList.remove('active');
+                isRunning = false;
+            } else {
+                pomodoroInterval = setInterval(() => {
+                    pomodoroTime--;
+                    updatePomodoroDisplay();
+                    
+                    if (pomodoroTime <= 0) {
+                        clearInterval(pomodoroInterval);
+                        isRunning = false;
+                        btn.textContent = 'Старт';
+                        btn.classList.remove('active');
+                        
+                        // Переключение режима
+                        isWorkMode = !isWorkMode;
+                        pomodoroTime = isWorkMode ? workTime * 60 : breakTime * 60;
+                        pomodoroTotalTime = pomodoroTime;
+                        document.getElementById('pomodoro-mode').textContent = 
+                            isWorkMode ? 'Работа' : 'Отдых';
+                        updatePomodoroDisplay();
+                    }
+                }, 1000);
+                
+                btn.textContent = 'Пауза';
+                btn.classList.add('active');
+                isRunning = true;
+            }
+        }
+
+        function resetPomodoro() {
+            clearInterval(pomodoroInterval);
+            isRunning = false;
+            isWorkMode = true;
+            workTime = parseInt(document.getElementById('work-time').value) || 25;
+            breakTime = parseInt(document.getElementById('break-time').value) || 5;
+            pomodoroTime = workTime * 60;
+            pomodoroTotalTime = workTime * 60;
+            document.getElementById('pomodoro-start').textContent = 'Старт';
+            document.getElementById('pomodoro-start').classList.remove('active');
+            document.getElementById('pomodoro-mode').textContent = 'Работа';
+            updatePomodoroDisplay();
+        }
+
+        updatePomodoroDisplay();
+    </script>
+</body>
+</html>
