@@ -98,43 +98,66 @@
         .calendar-week {
             display: grid;
             grid-template-columns: 60px repeat(7, 1fr);
-            gap: 1px;
-            background: rgba(255, 255, 255, 0.05);
+            gap: 0;
+            background: rgba(20, 20, 20, 0.6);
             border-radius: 8px;
-            overflow: hidden;
+            overflow: auto;
+            max-height: 70vh;
         }
 
         .week-header {
             display: contents;
+            position: sticky;
+            top: 0;
+            z-index: 20;
         }
 
         .time-label-header {
-            background: rgba(20, 20, 20, 0.9);
-            padding: 10px;
-            font-size: 11px;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 15px 10px;
+            font-size: 10px;
             opacity: 0.5;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 21;
         }
 
         .day-header {
-            background: rgba(20, 20, 20, 0.9);
-            padding: 10px;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 12px 10px;
             text-align: center;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 21;
         }
 
         .day-header.today {
+            background: rgba(76, 175, 80, 0.15);
             color: #4CAF50;
         }
 
         .day-header.highlighted {
+            background: rgba(255, 68, 68, 0.15);
             color: #ff4444;
+        }
+
+        .day-name {
+            text-transform: uppercase;
+            font-size: 10px;
+            opacity: 0.7;
         }
 
         .day-number {
             display: block;
-            font-size: 18px;
-            margin-top: 5px;
+            font-size: 20px;
+            margin-top: 4px;
+            font-weight: 600;
         }
 
         .time-grid {
@@ -142,55 +165,82 @@
         }
 
         .time-label {
-            background: rgba(20, 20, 20, 0.9);
-            padding: 5px;
+            background: rgba(20, 20, 20, 0.95);
+            padding: 8px 5px;
             text-align: right;
-            font-size: 11px;
-            opacity: 0.5;
-            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 10px;
+            opacity: 0.4;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            position: sticky;
+            left: 0;
+            z-index: 10;
         }
 
         .day-column {
-            background: rgba(30, 30, 30, 0.5);
+            background: rgba(30, 30, 30, 0.3);
             border-top: 1px solid rgba(255, 255, 255, 0.03);
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
             min-height: 60px;
             position: relative;
             cursor: pointer;
-            transition: background 0.2s ease;
+            transition: background 0.15s ease;
         }
 
         .day-column:hover {
-            background: rgba(40, 40, 40, 0.6);
+            background: rgba(40, 40, 40, 0.5);
         }
 
         .day-column.today {
-            background: rgba(76, 175, 80, 0.05);
+            background: rgba(76, 175, 80, 0.03);
         }
 
         .calendar-event {
             position: absolute;
-            left: 2px;
-            right: 2px;
-            background: rgba(59, 130, 246, 0.6);
+            left: 3px;
+            right: 3px;
+            background: rgba(59, 130, 246, 0.7);
             border-left: 3px solid #3b82f6;
             border-radius: 4px;
-            padding: 4px 6px;
+            padding: 6px 8px;
             font-size: 11px;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
             cursor: pointer;
             transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .calendar-event:hover {
-            background: rgba(59, 130, 246, 0.8);
-            z-index: 10;
+            background: rgba(59, 130, 246, 0.9);
+            z-index: 30;
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
         }
 
         .calendar-event.completed {
-            opacity: 0.5;
+            opacity: 0.4;
             text-decoration: line-through;
+            background: rgba(100, 100, 100, 0.5);
+            border-left-color: #666;
+        }
+
+        /* Scrollbar для календаря */
+        .calendar-week::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .calendar-week::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .calendar-week::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+        }
+
+        .calendar-week::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* TO-DO LIST */
@@ -566,63 +616,156 @@
 
         animateStars();
 
+        // ============== TO-DO LIST ==============
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
         // ============== КАЛЕНДАРЬ ==============
-        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
         const monthNames = [
             'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
             'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
         ];
 
+        let currentWeekStart = new Date();
+        currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+
+        function getWeekDates(startDate) {
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                dates.push(date);
+            }
+            return dates;
+        }
+
         function generateCalendar() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            const today = now.getDate();
+            const weekDates = getWeekDates(currentWeekStart);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-            const firstDay = new Date(year, month, 1);
-            const firstDayOfWeek = (firstDay.getDay() + 6) % 7;
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            // Обновить заголовок недели
+            const firstDate = weekDates[0];
+            const lastDate = weekDates[6];
+            const weekRange = `${firstDate.getDate()} ${monthNames[firstDate.getMonth()]} - ${lastDate.getDate()} ${monthNames[lastDate.getMonth()]} ${lastDate.getFullYear()}`;
+            document.getElementById('week-range').textContent = weekRange;
 
-            document.getElementById('month-year').textContent = `${monthNames[month]} ${year}`;
-            document.getElementById('current-date').textContent = `Сегодня: ${today} ${monthNames[month]}`;
+            const calendarWeek = document.getElementById('calendar-week');
+            calendarWeek.innerHTML = '';
 
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
+            // Заголовки
+            const header = document.createElement('div');
+            header.className = 'week-header';
+            
+            // Пустая ячейка для времени
+            const timeHeaderCell = document.createElement('div');
+            timeHeaderCell.className = 'time-label-header';
+            timeHeaderCell.textContent = 'GMT+5';
+            header.appendChild(timeHeaderCell);
 
-            dayNames.forEach(day => {
+            // Заголовки дней
+            weekDates.forEach(date => {
                 const dayHeader = document.createElement('div');
-                dayHeader.className = 'day-name';
-                dayHeader.textContent = day;
-                grid.appendChild(dayHeader);
+                dayHeader.className = 'day-header';
+                
+                const dateForComparison = new Date(date);
+                dateForComparison.setHours(0, 0, 0, 0);
+                
+                if (dateForComparison.getTime() === today.getTime()) {
+                    dayHeader.classList.add('today');
+                }
+                
+                if (date.getDate() === 9) {
+                    dayHeader.classList.add('highlighted');
+                }
+                
+                dayHeader.innerHTML = `
+                    <span class="day-name">${dayNames[date.getDay()]}</span>
+                    <span class="day-number">${date.getDate()}</span>
+                `;
+                header.appendChild(dayHeader);
             });
 
-            for (let i = 0; i < firstDayOfWeek; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.className = 'day-cell empty';
-                grid.appendChild(emptyCell);
+            calendarWeek.appendChild(header);
+
+            // Временные слоты (0-24 часов)
+            for (let hour = 0; hour < 24; hour++) {
+                const timeRow = document.createElement('div');
+                timeRow.className = 'time-grid';
+
+                // Метка времени
+                const timeLabel = document.createElement('div');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`;
+                timeRow.appendChild(timeLabel);
+
+                // Ячейки для каждого дня
+                weekDates.forEach(date => {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.className = 'day-column';
+                    dayColumn.dataset.date = date.toISOString().split('T')[0];
+                    dayColumn.dataset.hour = hour;
+
+                    const dateForComparison = new Date(date);
+                    dateForComparison.setHours(0, 0, 0, 0);
+                    
+                    if (dateForComparison.getTime() === today.getTime()) {
+                        dayColumn.classList.add('today');
+                    }
+
+                    timeRow.appendChild(dayColumn);
+                });
+
+                calendarWeek.appendChild(timeRow);
             }
 
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayCell = document.createElement('div');
-                dayCell.className = 'day-cell';
-                dayCell.textContent = day;
+            // Отобразить события из To-Do
+            renderCalendarEvents();
+        }
 
-                if (day === 9) {
-                    dayCell.classList.add('highlighted');
+        function renderCalendarEvents() {
+            todos.forEach(todo => {
+                if (todo.timeStart && todo.timeEnd) {
+                    // Найти дату задачи (пока используем сегодня, если не указано)
+                    const today = new Date();
+                    const dateStr = today.toISOString().split('T')[0];
+
+                    // Парсинг времени
+                    const [startHour, startMinute] = todo.timeStart.split(':').map(Number);
+                    const [endHour, endMinute] = todo.timeEnd.split(':').map(Number);
+
+                    const startCell = document.querySelector(`[data-date="${dateStr}"][data-hour="${startHour}"]`);
+                    if (startCell) {
+                        const duration = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                        const durationHours = duration / 60;
+                        const height = durationHours * 60; // 60px per hour
+                        const topOffset = (startMinute / 60) * 60; // Offset within the hour
+
+                        const event = document.createElement('div');
+                        event.className = 'calendar-event';
+                        if (todo.completed) event.classList.add('completed');
+                        event.style.top = `${topOffset}px`;
+                        event.style.height = `${height}px`;
+                        event.textContent = todo.text;
+                        event.title = `${todo.text}\n${todo.timeStart} - ${todo.timeEnd}`;
+
+                        startCell.appendChild(event);
+                    }
                 }
+            });
+        }
 
-                if (day === today) {
-                    dayCell.classList.add('today');
-                }
+        function previousWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            generateCalendar();
+        }
 
-                grid.appendChild(dayCell);
-            }
+        function nextWeek() {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            generateCalendar();
         }
 
         generateCalendar();
-
-        // ============== TO-DO LIST ==============
-        let todos = JSON.parse(localStorage.getItem('todos')) || [];
 
         function saveTodos() {
             localStorage.setItem('todos', JSON.stringify(todos));
@@ -651,6 +794,9 @@
                 `;
                 todoList.appendChild(todoItem);
             });
+            
+            // Обновить календарь при изменении To-Do
+            generateCalendar();
         }
 
         function addTodo() {
@@ -695,8 +841,8 @@
 
         // ============== POMODORO ==============
         let pomodoroInterval = null;
-        let workTime = 25;
-        let breakTime = 5;
+        let workTime = 50;
+        let breakTime = 10;
         let pomodoroTime = workTime * 60;
         let pomodoroTotalTime = workTime * 60;
         let isWorkMode = true;
@@ -705,8 +851,8 @@
         function updatePomodoroSettings() {
             if (isRunning) return; // Не менять настройки во время работы таймера
             
-            workTime = parseInt(document.getElementById('work-time').value) || 25;
-            breakTime = parseInt(document.getElementById('break-time').value) || 5;
+            workTime = parseInt(document.getElementById('work-time').value) || 50;  
+            breakTime = parseInt(document.getElementById('break-time').value) || 10;
             
             if (isWorkMode) {
                 pomodoroTime = workTime * 60;
